@@ -3,7 +3,7 @@ from dataclasses import asdict
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from starlette.responses import JSONResponse
+from fastapi.responses import JSONResponse
 
 from server.config import UPLOAD_DIR
 from server.logger import setup_logging
