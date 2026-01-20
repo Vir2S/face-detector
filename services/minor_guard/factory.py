@@ -7,6 +7,7 @@ from .providers.aws_rekognition import AwsRekognitionMinorGuard
 from .providers.hive import HiveDemographicMinorGuard
 from .providers.opencv_caffe import OpenCvCaffeMinorGuard
 from .providers.sightengine import SightengineMinorGuard
+from .types import MinorCheckResult
 
 
 logger = logging.getLogger(__name__)
@@ -18,36 +19,49 @@ def get_minor_guard():
 
     if provider == "aws":
         return AwsRekognitionMinorGuard()
-
     if provider == "sightengine":
         return SightengineMinorGuard()
-
     if provider == "hive":
         return HiveDemographicMinorGuard()
-
     if provider == "opencv":
         return OpenCvCaffeMinorGuard()
 
     raise ValueError(f"Unknown MINOR_GUARD_PROVIDER: {provider}")
 
 
-async def assert_no_minors(guard, image_bytes: bytes, content_type: str | None = None) -> None:
-    try:
-        result = await guard.check(image_bytes=image_bytes, content_type=content_type)
+async def assert_no_minors(guard, image_bytes: bytes, content_type: str | None = None) -> MinorCheckResult:
+    """
+    Run minor check and return the full result (provider, is_minor, reasons).
 
-    except MinorGuardProviderError:
+    Raises:
+      - MinorDetectedError (403 scenario) if a minor is detected.
+      - MinorCheckUnavailableError (503 scenario) if provider fails and fail-closed is enabled.
+    """
+    try:
+        result: MinorCheckResult = await guard.check(image_bytes=image_bytes, content_type=content_type)
+
+    except MinorGuardProviderError as e:
         logger.exception(
             "minor_guard provider_error "
             + key_value_serializer(
-                fail_closed=MINOR_GUARD_FAIL_CLOSED
+                fail_closed=MINOR_GUARD_FAIL_CLOSED,
+                provider=MINOR_GUARD_PROVIDER
             )
         )
 
         if MINOR_GUARD_FAIL_CLOSED:
-            # 503 scenario (provider down / expired token / network)
-            raise MinorCheckUnavailableError("Upload blocked: age-check temporarily unavailable.")
+            # Attach provider/cause so the API layer can return structured error data.
+            exc = MinorCheckUnavailableError("Upload blocked: age-check temporarily unavailable.")
+            setattr(exc, "provider", MINOR_GUARD_PROVIDER)
+            setattr(exc, "cause", type(e).__name__)
+            raise exc from e
 
-        return
+        # Fail-open: treat as "not minor" but keep diagnostic info in the result
+        return MinorCheckResult(
+            is_minor=False,
+            reasons=[f"provider_error_fail_open:{type(e).__name__}"],
+            provider=MINOR_GUARD_PROVIDER,
+        )
 
     logger.info(
         "minor_guard decision "
@@ -59,7 +73,9 @@ async def assert_no_minors(guard, image_bytes: bytes, content_type: str | None =
     )
 
     if result.is_minor:
-        # 403 scenario (real policy match)
-        raise MinorDetectedError("Upload blocked: image likely contains a minor (<18).")
+        # Attach the full provider result to the exception so the API layer can return it.
+        exc = MinorDetectedError("Upload blocked: image likely contains a minor (<18).")
+        setattr(exc, "result", result)
+        raise exc
 
-    return result.is_minor
+    return result
