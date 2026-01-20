@@ -11,3 +11,12 @@ class MinorGuardProviderError(Exception):
 class MinorCheckUnavailableError(Exception):
     """Raised when we block (fail-closed) because the provider is unavailable/broken."""
     pass
+
+
+class FaceNotDetectedError(Exception):
+    """Raised when no face is detected in the uploaded image."""
+
+    def __init__(self, message: str, result=None):
+        # Attach the model decision payload (if any) so the API can return it.
+        super().__init__(message)
+        self.result = result

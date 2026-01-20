@@ -3,14 +3,18 @@ from dataclasses import asdict
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from starlette.responses import JSONResponse
 
 from server.config import UPLOAD_DIR
 from server.logger import setup_logging
 from server.middlewares.request_id import RequestIdMiddleware
 from server.routes import router
 
-from services.minor_guard.exceptions import MinorDetectedError, MinorCheckUnavailableError
+from services.minor_guard.exceptions import (
+    MinorDetectedError,
+    MinorCheckUnavailableError,
+    FaceNotDetectedError,
+)
 
 
 # Initialize logging once at startup
@@ -59,6 +63,20 @@ async def minor_check_unavailable_handler(request: Request, exc: MinorCheckUnava
                 "provider": getattr(exc, "provider", "unknown"),
                 "cause": getattr(exc, "cause", "unknown"),
             },
+        },
+    )
+
+
+@app.exception_handler(FaceNotDetectedError)
+async def face_not_detected_handler(request: Request, exc: FaceNotDetectedError):
+    """Return a structured 422 response when no face is detected in the image."""
+    return JSONResponse(
+        status_code=422,
+        content={
+            "ok": False,
+            "error": "FACE_NOT_DETECTED",
+            "message": str(exc),
+            "minor_guard": _minor_guard_payload_from_exception(exc),
         },
     )
 
