@@ -43,7 +43,7 @@ AGE_MODEL_NAME = "age_net.caffemodel"
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 
 # Fixed age buckets for this model
-AGE_BUCKETS = ["(0-2)", "(4-6)", "(8-12)", "(15-20)", "(25-32)", "(38-43)", "(48-53)", "(60-100)"]
+AGE_BUCKETS = ["(0-3)", "(4-7)", "(8-12)", "(13-20)", "(21-32)", "(33-43)", "(44-59)", "(60-100)"]
 
 
 def _download_file(url: str, dst: Path) -> None:
