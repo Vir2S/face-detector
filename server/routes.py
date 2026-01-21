@@ -36,7 +36,7 @@ async def upload_image(file: UploadFile = File(...)):
 
     guard = get_minor_guard()
 
-    # Returns MinorCheckResult on success and raises domain exceptions on block.
+    # This returns MinorCheckResult on success and raises domain exceptions on block.
     # Those exceptions are handled globally in server/main.py.
     result = await assert_no_minors(guard, image_bytes, content_type=file.content_type)
 
