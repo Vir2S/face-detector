@@ -63,7 +63,6 @@ async def face_not_detected_handler(request: Request, exc: FaceNotDetectedError)
         minor_guard=minor_guard_payload_from_exception(exc),
     )
 
-
 # Attach request-id middleware for per-request log correlation (rid=...)
 app.add_middleware(RequestIdMiddleware)
 
