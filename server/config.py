@@ -49,12 +49,12 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # --- OpenCV (local) minor-guard models ---
 OPENCV_MODEL_DIR = Path(os.getenv("OPENCV_MODEL_DIR", "models/opencv")).resolve()
-OPENCV_FACE_CONF_TH = float(os.getenv("OPENCV_FACE_CONF_TH", "0.7"))
+OPENCV_FACE_CONF_TH = float(os.getenv("OPENCV_FACE_CONF_TH", "0.5"))
 
 # Which age buckets are considered "minor" (conservative default)
 # Age model buckets: (0-2), (4-6), (8-12), (15-20), (25-32), (38-43), (48-53), (60-100)
 OPENCV_BLOCK_BUCKETS = [
-    s.strip() for s in os.getenv("OPENCV_BLOCK_BUCKETS", "(0-2),(4-6),(8-12),(15-20)").split(",")
+    s.strip() for s in os.getenv("OPENCV_BLOCK_BUCKETS", "(0-3),(4-7),(8-12)").split(",")
     if s.strip()
 ]
 
